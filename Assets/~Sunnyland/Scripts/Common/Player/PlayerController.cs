@@ -31,6 +31,7 @@ namespace Sunnyland
         public float jumpHeight = 2f;
         public int maxJumpCount = 2;
         public bool isJumping = false;
+        private float inputH, inputV;
         [Header("Climb")]
         public float climbSpeed = 5f;
         public bool isClimbing = false;
@@ -50,11 +51,8 @@ namespace Sunnyland
         public FloatCallback onClimb;
 
         private Vector3 groundNormal = Vector3.up;
-        private Vector3 moveDirection;
         private int currentJump = 0;
-
-        private float vertical, horizontal;
-
+        
         // References
         private SpriteRenderer rend;
         private Animator anim;
@@ -71,7 +69,8 @@ namespace Sunnyland
         // Update is called once per frame
         void Update()
         {
-            moveDirection.y += Physics.gravity.y * Time.deltaTime;
+            PerformMove();
+            PerformJump();
         }
         void FixedUpdate()
         {
@@ -85,6 +84,38 @@ namespace Sunnyland
         }
         #endregion
         #region Custom Functions
+        void PerformMove()
+        {
+            if (isOnSlope && inputH == 0 && isGrounded)
+            {
+                // Cancel the velocity 
+                rigid.velocity = Vector3.zero;
+            }
+
+            Vector3 right = Vector3.Cross(groundNormal, Vector3.back);
+            rigid.AddForce(right * inputH * speed);
+
+            // Limit velocity to max velocity
+            LimitVelocity();
+        }
+
+        void PerformJump()
+        {
+            if (isJumping)
+            {
+                // if currentJump is less than maxJumpCount
+                if (currentJump < maxJumpCount)
+                {
+                    // Increment currentJump
+                    currentJump++;
+                    // Add Force to player (using Impulse)
+                    rigid.AddForce(Vector2.up * jumpHeight, ForceMode2D.Impulse);
+                }
+                // Reset jump input
+                isJumping = false;
+            }
+        }
+
         // Check to see if ray hit object is ground
         bool CheckSlope(RaycastHit2D hit)
         {
@@ -153,18 +184,22 @@ namespace Sunnyland
             // If hit collider is not null
             foreach (var hit in groundHits)
             {
+                // Detect if on a slope
+                if (Mathf.Abs(hit.normal.x) > 0.1f)
+                {
+                    // Set gravity to zero
+                    rigid.gravityScale = 0;
+                }
+                else
+                {
+                    // Set gravity to one
+                    rigid.gravityScale = 1;
+                }
+
                 if (CheckGround(hit))
                 {
                     // We found the ground! So exit the function
                     break;
-                }
-
-
-                // If hit collider is not null
-                if (hit.collider != null)
-                {
-                    // Reset currentJump
-                    currentJump = 0;
                 }
             }
             #endregion
@@ -187,36 +222,41 @@ namespace Sunnyland
                 rigid.velocity = rigid.velocity.normalized * maxVelocity;
             }
         }
+        void EnablePhysic()
+        {
+            rigid.simulated = true;
+            rigid.gravityScale = 1;
+        }
+        void DisablePhysics()
+        {
+            rigid.simulated = false;
+            rigid.gravityScale = 0;
+        }
 
         public void Jump()
         {
-            // if currentJump is less than maxJumpCount
-            if (currentJump < maxJumpCount)
+            isJumping = true;
+
+            if (onJump != null)
             {
-                // Increment currentJump
-                currentJump++;
-                // Add Force to player (using Impulse)
-                rigid.AddForce(Vector2.up * jumpHeight, ForceMode2D.Impulse);
+                onJump.Invoke();
             }
         }
+
         public void Move(float horizontal)
         {
-            // If horizontal > 0
-            if (horizontal > 0)
+            if (horizontal != 0)
             {
-                // Flip Character
-                rend.flipX = false;
+                rend.flipX = horizontal < 0;
             }
-            // If horizontal < 0
-            if (horizontal < 0)
+
+            inputH = horizontal;
+
+            // Invoke event 
+            if (onMove != null)
             {
-                // Flip character
-                rend.flipX = true;
+                onMove.Invoke(inputH);
             }
-            // Add force to player in the right direction
-            rigid.AddForce(Vector2.right * speed, ForceMode2D.Impulse);
-            // Limit velocity
-            LimitVelocity();
         }
         public void Climb()
         {
