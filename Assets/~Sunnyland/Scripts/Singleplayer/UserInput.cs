@@ -8,7 +8,7 @@ namespace Sunnyland
     {
         private PlayerController player;
 
-        private float inputH;
+        private float inputH, inputV;
         private bool isJumping;
         private bool isCrouching;
 
@@ -23,15 +23,25 @@ namespace Sunnyland
         {
             GetInput();
             player.Move(inputH);
+            player.Climb(inputV);
             if (isJumping)
             {
                 player.Jump();
+            }
+            if (isCrouching)
+            {
+                player.Crouch();
+            }
+            else
+            {
+                player.UnCrouch();
             }
         }
 
         void GetInput()
         {
             inputH = Input.GetAxis("Horizontal");
+            inputV = Input.GetAxis("Vertical");
             isJumping = Input.GetKeyDown(KeyCode.Space);
             isCrouching = Input.GetKeyDown(KeyCode.LeftControl);
         }
