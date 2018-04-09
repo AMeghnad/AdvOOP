@@ -17,6 +17,7 @@ namespace Sunnyland
         {
             anim = GetComponent<Animator>();
             player = GetComponent<PlayerController>();
+            rigid = GetComponent<Rigidbody2D>();
             // Subscribe animator to player events
             player.onGroundedChanged += OnGroundedChanged;
             player.onJump += OnJump;
@@ -26,9 +27,9 @@ namespace Sunnyland
         }
         void Update()
         {
-            anim.SetBool("IsGrounded", player.isGrounded);
-            anim.SetBool("IsClimbing", player.isCrouching);
-            anim.SetBool("IsCrouching", player.isCrouching);
+            anim.SetBool("isGrounded", player.isGrounded);
+            anim.SetBool("isClimbing", player.isClimbing);
+            anim.SetBool("isCrouching", player.isCrouching);
             anim.SetFloat("JumpY", rigid.velocity.normalized.y);
         }
         #endregion
@@ -43,7 +44,7 @@ namespace Sunnyland
         }
         void OnMove(float input)
         {
-            anim.SetBool("IsRunning", input != 0);
+            anim.SetBool("isRunning", input != 0);
         }
         void OnClimb(float input)
         {
